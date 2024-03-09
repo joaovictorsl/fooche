@@ -5,8 +5,16 @@ package evict
 type EvictionPolicy[T comparable] interface {
 	// Records an access to a key.
 	//
-	// Returns the key that should be evicted, if any, and a boolean indicating if an eviction occurred.
+	// # Params
+	//   - key: the key that was accessed
+	//
+	// # Returns
+	//
+	// The key that should be evicted, if any, and a boolean indicating if an eviction occurred.
 	RecordAccess(key T) (evictedKey T, eviction bool)
 	// Removes a key
+	//
+	// # Params
+	//   - key: the key to be removed
 	Remove(key T)
 }

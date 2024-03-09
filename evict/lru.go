@@ -8,7 +8,7 @@ import (
 type (
 	// LRU is a simple implementation of a Least Recently Used cache eviction policy.
 	//
-	// Not concurrent-safe
+	// Not concurrent-safe.
 	LRU[T comparable] struct {
 		head       *lruNode[T]
 		tail       *lruNode[T]
@@ -25,7 +25,11 @@ type (
 	}
 )
 
-// Returns true if the node's value is equal to the zero value of type T, false otherwise.
+// Indicates wether the LRU is empty or not.
+//
+// # Returns
+//
+// True if the node's value is equal to the zero value of type T, false otherwise.
 func (n *lruNode[T]) isEmpty() bool {
 	var empty T
 	return n.key == empty
@@ -76,6 +80,9 @@ func (l *LRU[T]) Remove(key T) {
 // Adds a key to MRU position.
 //
 // This method does not update the size variable.
+//
+// # Params
+//   - k: the key to be added
 func (l *LRU[T]) addToFront(k T) {
 	if l.head.isEmpty() {
 		l.head.key = k
@@ -89,6 +96,9 @@ func (l *LRU[T]) addToFront(k T) {
 }
 
 // Moves a node to the MRU position if it is not already in it.
+//
+// # Params
+//   - node: the node to be moved
 func (l *LRU[T]) moveToFront(node *lruNode[T]) {
 	if l.size <= 1 || node == l.head {
 		return
@@ -102,9 +112,12 @@ func (l *LRU[T]) moveToFront(node *lruNode[T]) {
 	l.head = node
 }
 
-// Adds a key to MRU position.
+// Removes a node.
 //
 // This method does not update the size variable.
+//
+// # Params
+//   - node: the node to be removed
 func (l *LRU[T]) remove(node *lruNode[T]) {
 	var empty T
 	if l.size == 0 {

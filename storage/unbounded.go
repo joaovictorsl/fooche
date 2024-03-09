@@ -1,5 +1,6 @@
 package storage
 
+// This is a wrapper around a map[string][]byte data structure.
 type UnboundedStorage struct {
 	data map[string][]byte
 }

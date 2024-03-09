@@ -9,14 +9,28 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// A storage that has a fixed capacity and can store values of different sizes.
 type BoundedStorage struct {
-	keyToBucketMap   map[string]int
+	// Maps a key to the bucket it is stored in
+	keyToBucketMap map[string]int
+	// Maps a bucket to the index where the value is storage in the data slice
 	bucketToIndexMap map[int]*maps.OccupationMap[string, int]
-	data             []byte
-	sizes            []int
-	cap              int
+	// The data slice
+	data []byte
+	// The different sizes of buckets
+	sizes []int
+	// The total capacity of objects the storage can store
+	cap int
 }
 
+// Creates a new BoundedStorage.
+//
+// # Params
+//   - sizeToCapMap: a map of size in bytes and capacity (how many objects with this size or less can be stored).
+//
+// # Returns
+//
+// A new BoundedStorage.
 func NewBoundedStorage(sizeToCapMap map[int]int) *BoundedStorage {
 	if len(sizeToCapMap) == 0 {
 		log.Fatal("Invalid args for new BoundedStorage. sizeToCapMap must not be empty.")

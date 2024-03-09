@@ -9,16 +9,24 @@ import (
 	"github.com/joaovictorsl/fooche/storage"
 )
 
-// A cache which does no eviction and has no expiration.
+// A simple cache in which keys are evicted based on its policy when bounded.
+//
+// The cache is thread-safe and can be used concurrently.
 type SimpleCache struct {
 	lock    *sync.RWMutex
 	storage storage.Storage
 	policy  evict.EvictionPolicy[string]
 }
 
-/*
-Creates a bounded SimpleCache, see BoundedStorage in [dcache.core.cache.storage] for more info on allocated bytes.
-*/
+// Creates a bounded SimpleCache, see [storage.BoundedStorage] for more info on storage implementation.
+//
+// # Params
+//   - sizeAndCapMap: a map of size in bytes and capacity (how many objects with this size or less can be stored).
+//   - createPolicy: a function that creates a new eviction policy based on the storage's capacity.
+//
+// # Returns
+//
+// A new SimpleCache.
 func NewSimpleBounded(sizeAndCapMap map[int]int, createPolicy func(capacity int) evict.EvictionPolicy[string]) *SimpleCache {
 	s := storage.NewBoundedStorage(sizeAndCapMap)
 	return &SimpleCache{
@@ -28,7 +36,13 @@ func NewSimpleBounded(sizeAndCapMap map[int]int, createPolicy func(capacity int)
 	}
 }
 
-// Creates a unbounded SimpleCache.
+// Creates a unbounded SimpleCache, see [storage.UnboundedStorage] for more info on storage implementation.
+//
+// No policy is used since storage is unbounded.
+//
+// # Returns
+//
+// A new SimpleCache.
 func NewSimple() *SimpleCache {
 	return &SimpleCache{
 		lock:    &sync.RWMutex{},
@@ -41,7 +55,7 @@ func (c *SimpleCache) String() string {
 	return fmt.Sprintf("%v", c.storage)
 }
 
-func (c *SimpleCache) Set(k string, v []byte, ttl time.Duration) error {
+func (c *SimpleCache) Set(k string, v []byte, _ time.Duration) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -58,9 +72,6 @@ func (c *SimpleCache) Set(k string, v []byte, ttl time.Duration) error {
 }
 
 func (c *SimpleCache) Has(k string) bool {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	_, err := c.Get(k)
 	return err == nil
 }
@@ -77,6 +88,19 @@ func (c *SimpleCache) Get(k string) (v []byte, err error) {
 	evictedKey, eviction := c.policy.RecordAccess(k)
 	if eviction {
 		c.storage.Remove(evictedKey)
+	}
+
+	return v, nil
+}
+
+func (c *SimpleCache) ComputeIfAbsent(k string, computeValue func() []byte) (v []byte, err error) {
+	v, err = c.Get(k)
+	if err != nil {
+		v = computeValue()
+	}
+
+	if err := c.Set(k, v, 0); err != nil {
+		return nil, err
 	}
 
 	return v, nil
